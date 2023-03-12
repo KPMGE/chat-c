@@ -5,12 +5,45 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <pthread.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
 #define MAX_CLIENT_CONNECTIONS 10
 
 // server -> socket -> bind -> listen -> accept -> read -> write
+
+void handle_client(int new_socket_fd) {
+  // once a connection has been established, keep parsing messages from the client
+  for (;;) {
+    // create a simple buffer to read data into
+    char buffer[BUFFER_SIZE];
+    // read received data into buffer
+    int bytes_read = read(new_socket_fd, buffer, BUFFER_SIZE);
+
+    // an error has occurred
+    if (bytes_read == -1) {
+      perror("error when reading");
+      exit(1);
+    }
+
+    if (bytes_read == 0) {
+      printf("connection closed by client\n");
+      break;
+    }
+
+    printf("message received: %s\n", buffer);
+
+    const char *message_to_client = "hello client, i've received your message, ty\n";
+    send(new_socket_fd, message_to_client, strlen(message_to_client), 0);
+
+    // clear buffer
+    memset(buffer, 0, sizeof(buffer));
+  }
+
+  close(new_socket_fd);
+}
 
 int main (int argc, char *argv[]) {
   // AF_INET     -> ipv4
@@ -50,32 +83,7 @@ int main (int argc, char *argv[]) {
     exit(1);
   }
 
-  // once a connection has been established, keep parsing messages from the client
-  for (;;) {
-    // create a simple buffer to read data into
-    char buffer[BUFFER_SIZE];
-    // read received data into buffer
-    int bytes_read = read(new_socket_fd, buffer, BUFFER_SIZE);
+  printf("new client connected: %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
 
-    // an error has occurred
-    if (bytes_read == -1) {
-      perror("error when reading");
-      exit(1);
-    }
-
-    // EOF
-    if (bytes_read == 0) {
-      close(new_socket_fd);
-      shutdown(socket_fd, SHUT_RDWR);
-      exit(0);
-    }
-
-    printf("message received: %s\n", buffer);
-
-    const char *message_to_client = "hello client, i've received your message, ty\n";
-    send(new_socket_fd, message_to_client, strlen(message_to_client), 0);
-
-    // clear buffer
-    memset(buffer, 0, sizeof(buffer));
-  }
+  handle_client(new_socket_fd);
 }
