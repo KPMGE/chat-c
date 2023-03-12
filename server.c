@@ -75,15 +75,17 @@ int main (int argc, char *argv[]) {
     exit(1);
   }
 
-  // awaits connections on the socket, generating a new socket descriptor 
-  socklen_t address_len = sizeof(address);
-  int new_socket_fd = accept(socket_fd, (struct sockaddr *) &address, &address_len);
-  if (new_socket_fd < 0) {
-    perror("accept");
-    exit(1);
+  for (;;) {
+    // awaits connections on the socket, generating a new socket descriptor 
+    socklen_t address_len = sizeof(address);
+    int new_socket_fd = accept(socket_fd, (struct sockaddr *) &address, &address_len);
+    if (new_socket_fd < 0) {
+      perror("accept");
+      exit(1);
+    }
+
+    printf("new client connected: %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+
+    handle_client(new_socket_fd);
   }
-
-  printf("new client connected: %s:%d\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-
-  handle_client(new_socket_fd);
 }
