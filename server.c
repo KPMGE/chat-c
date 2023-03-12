@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -55,6 +56,9 @@ int main (int argc, char *argv[]) {
   read(new_socket_fd, buffer, BUFFER_SIZE);
 
   printf("message received: %s\n", buffer);
+
+  const char *message_to_client = "hello client, i've received your message, ty\n";
+  send(new_socket_fd, message_to_client, strlen(message_to_client), 0);
 
   // close connected socket
   close(new_socket_fd);
